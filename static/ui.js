@@ -5432,6 +5432,41 @@ function _toolDisplayName(tc){
   if(name==='delegate_task') return 'Delegate task';
   return name;
 }
+function _toolCardArgValue(value){
+  if(value===null||value===undefined) return '';
+  if(typeof value==='string') return value;
+  if(typeof value==='number'||typeof value==='boolean') return String(value);
+  try{return JSON.stringify(value,null,2);}
+  catch(_){return String(value);}
+}
+function _toggleToolCard(header){
+  const card=header&&header.closest?header.closest('.tool-card'):null;
+  if(!card||card.getAttribute('data-has-detail')!=='1') return;
+  const open=card.classList.toggle('open');
+  header.setAttribute('aria-expanded',String(open));
+}
+function _toggleToolCardSection(btn){
+  const section=btn&&btn.closest?btn.closest('.tool-card-section'):null;
+  if(!section) return;
+  const open=section.classList.toggle('open');
+  btn.setAttribute('aria-expanded',String(open));
+}
+function _toggleToolCardSnippet(btn){
+  const pre=btn&&btn.previousElementSibling;
+  if(!pre) return;
+  const expanded=btn.getAttribute('data-expanded')==='true';
+  if(expanded){
+    pre.textContent=btn.dataset.short||'';
+    btn.textContent=btn.dataset.moreLabel||'Show more';
+    btn.setAttribute('data-expanded','false');
+    btn.setAttribute('aria-expanded','false');
+  }else{
+    pre.textContent=btn.dataset.full||'';
+    btn.textContent=btn.dataset.lessLabel||'Show less';
+    btn.setAttribute('data-expanded','true');
+    btn.setAttribute('aria-expanded','true');
+  }
+}
 function toolIcon(name){
   const icons={
     terminal:        li('terminal'),
@@ -5459,7 +5494,7 @@ function buildToolCard(tc){
   const row=document.createElement('div');
   row.className='tool-card-row';
   const icon=toolIcon(tc.name);
-  const hasDetail=tc.snippet||(tc.args&&Object.keys(tc.args).length>0);
+  const hasArgs=!!(tc.args&&Object.keys(tc.args).length>0);
   let displaySnippet='';
   if(tc.snippet){
     const s=tc.snippet;
@@ -5473,6 +5508,14 @@ function buildToolCard(tc){
   const hasMore=tc.snippet&&tc.snippet.length>displaySnippet.length;
   const moreLabel=tc.is_diff?'Show diff':'Show more';
   const lessLabel=tc.is_diff?'Hide diff':'Show less';
+  const fullSnippetAttr=esc(tc.snippet||'').replace(/"/g,'&quot;');
+  const shortSnippetAttr=esc(displaySnippet||'').replace(/"/g,'&quot;');
+  const argsHtml=hasArgs?Object.entries(tc.args).map(([k,v])=>`<div><span class="tool-arg-key">${esc(k)}</span> <span class="tool-arg-val">${esc(_toolCardArgValue(v))}</span></div>`).join(''):'';
+  const inputSection=argsHtml?`<div class="tool-card-section tool-card-section-input"><button type="button" class="tool-card-section-toggle" aria-expanded="false" onclick="_toggleToolCardSection(this)"><span class="tool-card-section-label">Input</span><span class="tool-card-section-toggle-icon">${li('chevron-right',12)}</span></button><div class="tool-card-section-body"><div class="tool-card-args">${argsHtml}</div></div></div>`:'';
+  const moreButtonHtml=hasMore?`<button class="tool-card-more" type="button" aria-expanded="false" data-expanded="false" data-full="${fullSnippetAttr}" data-short="${shortSnippetAttr}" data-more-label="${esc(moreLabel)}" data-less-label="${esc(lessLabel)}" onclick="_toggleToolCardSnippet(this)">${esc(moreLabel)}</button>`:'';
+  const outputSection=displaySnippet?`<div class="tool-card-section tool-card-section-output"><button type="button" class="tool-card-section-toggle" aria-expanded="false" onclick="_toggleToolCardSection(this)"><span class="tool-card-section-label">Output</span><span class="tool-card-section-toggle-icon">${li('chevron-right',12)}</span></button><div class="tool-card-section-body"><div class="tool-card-result"><pre>${esc(displaySnippet)}</pre>${moreButtonHtml}</div></div></div>`:'';
+  const detailSections=inputSection+outputSection;
+  const hasDetail=!!detailSections;
   const runIndicator=tc.done===false?'<span class="tool-card-running-dot"></span>':'';
   const isSubagent=tc.name==='subagent_progress';
   const isDelegation=tc.name==='delegate_task';
@@ -5482,8 +5525,8 @@ function buildToolCard(tc){
   let previewText=tc.preview||displaySnippet||'';
   if(isSubagent) previewText=previewText.replace(/^(?:\u{1F500}|↳)\s*/u,'');
   row.innerHTML=`
-    <div class="${cardClass}">
-      <div class="tool-card-header" onclick="this.closest('.tool-card').classList.toggle('open')">
+    <div class="${cardClass}" data-has-detail="${hasDetail?'1':'0'}">
+      <div class="tool-card-header${hasDetail?' tool-card-header-expandable':''}"${hasDetail?' role="button" tabindex="0" aria-expanded="false" onclick="_toggleToolCard(this)"':''}>
         ${runIndicator}
         <span class="tool-card-icon">${icon}</span>
         <span class="tool-card-name">${esc(displayName)}</span>
@@ -5491,13 +5534,7 @@ function buildToolCard(tc){
         ${hasDetail?`<span class="tool-card-toggle">${li('chevron-right',12)}</span>`:''}
       </div>
       ${hasDetail?`<div class="tool-card-detail">
-        ${tc.args&&Object.keys(tc.args).length?`<div class="tool-card-args">${
-          Object.entries(tc.args).map(([k,v])=>`<div><span class="tool-arg-key">${esc(k)}</span> <span class="tool-arg-val">${esc(String(v))}</span></div>`).join('')
-        }</div>`:''}
-        ${displaySnippet?`<div class="tool-card-result">
-          <pre>${esc(displaySnippet)}</pre>
-          ${hasMore?`<button class="tool-card-more" data-full="${esc(tc.snippet||'').replace(/"/g,'&quot;')}" data-short="${esc(displaySnippet||'').replace(/"/g,'&quot;')}" data-more-label="${esc(moreLabel)}" data-less-label="${esc(lessLabel)}" onclick="event.stopPropagation();const p=this.previousElementSibling;const full=this.dataset.full;const short=this.dataset.short;p.textContent=p.textContent===short?full:short;this.textContent=p.textContent===short?this.dataset.moreLabel:this.dataset.lessLabel">${esc(moreLabel)}</button>`:''}
-        </div>`:''}
+        ${detailSections}
       </div>`:''}
     </div>`;
   return row;
