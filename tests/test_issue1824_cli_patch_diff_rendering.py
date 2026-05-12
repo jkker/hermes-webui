@@ -41,6 +41,14 @@ def test_diff_tool_cards_use_show_diff_expander_label():
     assert 'data-more-label="${esc(moreLabel)}"' in UI_JS
 
 
+def test_tool_cards_render_separate_input_and_output_sections():
+    assert "tool-card-section tool-card-section-input" in UI_JS
+    assert "tool-card-section tool-card-section-output" in UI_JS
+    assert '<span class="tool-card-section-label">Input</span>' in UI_JS
+    assert '<span class="tool-card-section-label">Output</span>' in UI_JS
+    assert "function _toolCardArgValue" in UI_JS
+
+
 def _function_source(src: str, name: str) -> str:
     match = re.search(rf"function\s+{re.escape(name)}\s*\(", src)
     assert match, f"{name}() not found"
@@ -109,6 +117,7 @@ def test_rendered_apply_patch_tool_card_html_contains_diff_lines():
         "_cliPatchSnippetFromArgs",
         "_cliToolCardSnippet",
         "_cliToolCardHasDiffSnippet",
+        "_toolCardArgValue",
         "buildToolCard",
     ]
     functions = "\n".join(_function_source(UI_JS, name) for name in function_names)
@@ -151,6 +160,8 @@ def test_rendered_apply_patch_tool_card_html_contains_diff_lines():
     assert "-old" in html
     assert "+new" in html
     assert "Show diff" in html
+    assert "Input" in html
+    assert "Output" in html
     assert "Patch failed: context not found" in payload["errorSnippet"]
     assert "-old" in payload["errorSnippet"]
 
