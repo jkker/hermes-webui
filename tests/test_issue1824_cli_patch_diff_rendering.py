@@ -39,6 +39,7 @@ def test_diff_tool_cards_use_show_diff_expander_label():
     assert "const moreLabel=tc.is_diff?'Show diff':'Show more';" in UI_JS
     assert "const lessLabel=tc.is_diff?'Hide diff':'Show less';" in UI_JS
     assert 'data-more-label="${esc(moreLabel)}"' in UI_JS
+    assert 'aria-expanded="false"' in UI_JS
 
 
 def test_tool_cards_render_separate_input_and_output_sections():
