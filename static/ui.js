@@ -5506,9 +5506,12 @@ function buildToolCard(tc){
   const hasMore=tc.snippet&&tc.snippet.length>displaySnippet.length;
   const moreLabel=tc.is_diff?'Show diff':'Show more';
   const lessLabel=tc.is_diff?'Hide diff':'Show less';
+  const fullSnippetAttr=esc(tc.snippet||'').replace(/"/g,'&quot;');
+  const shortSnippetAttr=esc(displaySnippet||'').replace(/"/g,'&quot;');
   const argsHtml=hasArgs?Object.entries(tc.args).map(([k,v])=>`<div><span class="tool-arg-key">${esc(k)}</span> <span class="tool-arg-val">${esc(_toolCardArgValue(v))}</span></div>`).join(''):'';
   const inputSection=argsHtml?`<div class="tool-card-section tool-card-section-input"><button type="button" class="tool-card-section-toggle" aria-expanded="false" onclick="_toggleToolCardSection(this)"><span class="tool-card-section-label">Input</span><span class="tool-card-section-toggle-icon">${li('chevron-right',12)}</span></button><div class="tool-card-section-body"><div class="tool-card-args">${argsHtml}</div></div></div>`:'';
-  const outputSection=displaySnippet?`<div class="tool-card-section tool-card-section-output"><button type="button" class="tool-card-section-toggle" aria-expanded="false" onclick="_toggleToolCardSection(this)"><span class="tool-card-section-label">Output</span><span class="tool-card-section-toggle-icon">${li('chevron-right',12)}</span></button><div class="tool-card-section-body"><div class="tool-card-result"><pre>${esc(displaySnippet)}</pre>${hasMore?`<button class="tool-card-more" type="button" data-expanded="false" data-full="${esc(tc.snippet||'').replace(/"/g,'&quot;')}" data-short="${esc(displaySnippet||'').replace(/"/g,'&quot;')}" data-more-label="${esc(moreLabel)}" data-less-label="${esc(lessLabel)}" onclick="_toggleToolCardSnippet(this)">${esc(moreLabel)}</button>`:''}</div></div></div>`:'';
+  const moreButtonHtml=hasMore?`<button class="tool-card-more" type="button" data-expanded="false" data-full="${fullSnippetAttr}" data-short="${shortSnippetAttr}" data-more-label="${esc(moreLabel)}" data-less-label="${esc(lessLabel)}" onclick="_toggleToolCardSnippet(this)">${esc(moreLabel)}</button>`:'';
+  const outputSection=displaySnippet?`<div class="tool-card-section tool-card-section-output"><button type="button" class="tool-card-section-toggle" aria-expanded="false" onclick="_toggleToolCardSection(this)"><span class="tool-card-section-label">Output</span><span class="tool-card-section-toggle-icon">${li('chevron-right',12)}</span></button><div class="tool-card-section-body"><div class="tool-card-result"><pre>${esc(displaySnippet)}</pre>${moreButtonHtml}</div></div></div>`:'';
   const detailSections=inputSection+outputSection;
   const hasDetail=!!detailSections;
   const runIndicator=tc.done===false?'<span class="tool-card-running-dot"></span>':'';
